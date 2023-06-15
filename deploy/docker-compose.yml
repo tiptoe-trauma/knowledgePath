@@ -1,0 +1,10 @@
+version: "3.10"
+services:
+  django:
+    build: ../
+    ports:
+      - "45000:3000"
+    environment:
+      - TRIPLESTORE_URL=xxxxxxxxxxxx
+      - TRIPLESTORE_PASSWORD=xxxxxxxxxxx
+

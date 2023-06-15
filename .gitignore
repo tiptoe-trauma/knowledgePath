@@ -1,0 +1,11 @@
+*.pyc
+db.sqlite3
+geckodriver.log
+/env
+/env_bkup
+/bkup
+last_built
+database_backups/
+core/static/app.js
+/node_modules
+/deploy/docker-compose-prod.yml

@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}Knowledge Path{% endblock %}</title>
+    <script src="{% static 'app.js' %}" ></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    {% block header %}{% endblock %}
+</head>
+
+<body class="body">
+    <div class="navbar navbar-dark bg-uamsred shadow-sm">
+      <div class="container justify-content-between">
+        <a class="navbar-brand d-flex align-items-center" href="/">
+          UAMS 
+        </a>
+        <h1 class="navbar-brand">{% block header_title %}Knowledge Path{% endblock %}</h1>
+        <div class="nav">
+            {% block nav_link %}{% endblock %}
+            <a class="nav-link text-light" href="/accounts/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+    {% block content %}{% endblock %}
+</body>
+  <footer class="footer mt-4">
+    <div class="row justify-content-center text-center">
+      <a href="#bannerformmodal" data-toggle="modal" data-target="#bannerformmodal">Have a question?  Need help?</a>
+    </div>
+  
+    <div class="modal fade bannerformmodal" id="bannerformmodal" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="bannerformmodal" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="bannerformmodal">Help</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <form action="/" method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+              Your question will be submitted to your advisor and education leadership. 
+                <div class="form-group">
+                  <label for="message-text" class="col-form-label">Question:</label>
+                  <textarea class="form-control" id="message-text" name="message-text"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" name="SubmitQuestion"  class="btn btn-primary">Submit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <footer class="footer mt-4">
+    <div class="row justify-content-center text-center">
+      For help logging in, please contact&nbsp<a href="mailto: jmwhorton@uams.edu">jmwhorton@uams.edu</a>
+    </div>
+  </footer>
+</html>
