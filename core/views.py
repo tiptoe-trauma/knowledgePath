@@ -51,6 +51,13 @@ where {
     ?s ?p ?o .
         filter(?s = <target> ||
    		?o = <target>)
+    OPTIONAL {
+    	?p rdfs:label ?plabel .
+    } OPTIONAL {
+    	?s rdfs:label ?slabel .
+    } OPTIONAL {
+    	?o rdfs:label ?olabel .
+    }
 
 } limit 100 
 """
@@ -70,16 +77,22 @@ where {
                 for term in data['results']['bindings']:
                     toAdd = {}
                     if 'slabel' in term.keys():
-                        toAdd['subject'] = term['slabel']['value']
+                        toAdd['slabel'] = term['slabel']['value']
+                        toAdd['subject'] = term['s']['value']
                     else:
+                        toAdd['slabel'] = term['s']['value']
                         toAdd['subject'] = term['s']['value']
                     if 'plabel' in term.keys():
-                        toAdd['predicate'] = term['plabel']['value']
+                        toAdd['plabel'] = term['plabel']['value']
+                        toAdd['predicate'] = term['p']['value']
                     else:
+                        toAdd['plabel'] = term['p']['value']
                         toAdd['predicate'] = term['p']['value']
                     if 'olabel' in term.keys():
-                        toAdd['object'] = term['olabel']['value']
+                        toAdd['olabel'] = term['olabel']['value']
+                        toAdd['object'] = term['o']['value']
                     else:
+                        toAdd['olabel'] = term['o']['value']
                         toAdd['object'] = term['o']['value']
 
                     terms.append(toAdd)

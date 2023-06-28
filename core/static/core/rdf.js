@@ -46,7 +46,7 @@ function initializeSimulation() {
     if (child !== focus.id) {
       console.log(child)
       var nodeToChange = graph.nodes.find(node => node.id == child)
-      nodeToChange.fx = width * .1;
+      nodeToChange.fx = width * .2;
     }
   }
 
@@ -77,7 +77,7 @@ forceProperties = {
         enabled: true,
         strength: .7,
         iterations: 1,
-        radius: 26
+        radius: 40 
     },
     forceX: {
         enabled: false,
@@ -125,22 +125,53 @@ function triplesToGraph(triples){
 		var subjId = triple.subject;
 		var predId = triple.predicate;
 		var objId = triple.object;
+		var subjLabel = triple.slabel;
+		var predLabel = triple.plabel;
+		var objLabel = triple.olabel;
+
+    if (subjLabel.startsWith("x") && subjLabel.length === 22) {
+      subjLabel = 'bnode'
+    }
+
+    if (objLabel.startsWith("x") && objLabel.length === 22) {
+      objLabel = 'bnode'
+    }
 
 		var subjNode = filterNodesById(graph.nodes, subjId)[0];
 		var objNode  = filterNodesById(graph.nodes, objId)[0];
 
 		if(subjNode==null){
-			subjNode = {id:subjId, label:subjId, weight:1};
+			subjNode = {id:subjId, label:subjLabel, weight:1};
 			graph.nodes.push(subjNode);
 		}
 
 		if(objNode==null){
-			objNode = {id:objId, label:objId, weight:1};
+			objNode = {id:objId, label:objLabel, weight:1};
 			graph.nodes.push(objNode);
 		}
 
+    // IMPORTANT NOTE:  Only displays the first link created, not the most important.
+    // Needs to have some way of prioritizing.
+    // Assuming graph is your graph object
+    let linkExists = false;
+    
+    for (let i = 0; i < graph.links.length; i++) {
+      const link = graph.links[i];
+    
+      if (link.source === subjNode && link.target === objNode) {
+        linkExists = true;
+        break;
+      }
+    }
+    
+    if (linkExists) {
+      console.log("The link already exists in the graph.");
+    } else {
+      // Add the link to the graph
+      graph.links.push({source: subjNode, target: objNode, predicate: predLabel, weight: 1});
+    }
 
-		graph.links.push({source:subjNode, target:objNode, predicate:predId, weight:1});
+
 	});
 
 	return graph;
@@ -388,10 +419,39 @@ function ticked() {
 		;
 
 
-	linkTexts
-		.attr("x", function(d) { return 4 + (d.source.x + d.target.x)/2  ; })
-		.attr("y", function(d) { return 4 + (d.source.y + d.target.y)/2 ; })
-		;
+  linkTexts.attr("transform", function(d) {
+    // Calculate the angle between the source and target nodes
+    var dx = d.target.x - d.source.x;
+    var dy = d.target.y - d.source.y;
+    var angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  
+    // Calculate the midpoint of the line
+    var midX = (d.source.x + d.target.x) / 2;
+    var midY = (d.source.y + d.target.y) / 2;
+  
+    // Get the text element
+    var textElement = d3.select(this);
+  
+    // Get the computed text length
+    var textLength = textElement.node().getComputedTextLength();
+  
+    // Calculate the offset for text positioning
+    var offsetX = (textLength / 2) * Math.cos(angle * Math.PI / 180);
+    var offsetY = (textLength / 2) * Math.sin(angle * Math.PI / 180);
+
+    // Calculate the perpendicular distance for text positioning
+    var perpendicularDistance = 2; // Adjust this value as needed
+    offsetX += -perpendicularDistance * Math.sin(angle * Math.PI / 180);
+    offsetY += perpendicularDistance * Math.cos(angle * Math.PI / 180);
+  
+    // Translate the text to the adjusted position
+    var x = midX - offsetX;
+    var y = midY - offsetY;
+  
+    return "translate(" + x + "," + y + ") rotate(" + angle + ")";
+  });
+
+
 }
 
 function zoomed() {
