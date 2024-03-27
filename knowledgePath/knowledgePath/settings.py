@@ -26,7 +26,7 @@ SECRET_KEY = "django-insecure-url+7mi!8605fu1xg%3l4y957pxersfmt&i+!2ri63ku9i3kve
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', 'cafedb.ad.uams.edu']
 
 
 # Application definition

@@ -7,10 +7,8 @@
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>Visualizing RDF using D3</title>
 	<style type="text/css">
 		.node {
-		  stroke: #fff;
 		  fill:#ddd;
 		  stroke-width: 1.5px;
 		}
@@ -43,17 +41,29 @@
 
 </head>
 <body style="margin:20px;">
-  <h1>Visualizing RDF using D3</h1>
   <form action="/rdf/" method="post">
     {% csrf_token %}
         <div class="form-group">
-          <label for="target-node" class="col-form-label">Target Node:</label>
+          <label for="target-node" class="col-form-label">Target Node (test example: http://purl.obolibrary.org/obo/OOSTT_154/trauma_program ):</label>
           <input type="text" class="form-control" id="target-node" name="target-node"></text>
+          <label for="target-graph" class="col-form-label">Target Graph (test example: https://cafe-trauma.com/cafe/organization/154/question/1004 ):</label>
+          <input type="text" class="form-control" id="target-graph" name="target-graph"></text>
         </div>
-        <p>Test example: &lt;http://purl.obolibrary.org/obo/OOSTT_154/trauma_medical_director&gt;</p>
+        <hr>
+        <div class="form-group">
+          <label for="node-select" class="col-form-label">Your Nodes:</label>
+          <select class="form-control" id="node-select" name="node-select">
+            {% for option in your_nodes %}
+              <option value="{{ option.value }}"{% if targetNode == "'"|add:option.value|add:"'" %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+
         <button type="submit" name="SubmitQuestion"  class="btn btn-primary">Submit</button>
   </form>
   <div id="svg-body" class="panel-body"></div>
+  <div id="info-container">
+  <!-- Information will be displayed here -->
+  </div>
 
 <div class="controls">
   <div class="force alpha">
@@ -162,7 +172,8 @@
   window.onload = function () {
   // We render via Django template
     triples = {{triples|safe}}
-    setrdf(triples);
+    targetNode = {{targetNode|safe}}
+    setrdf(triples, targetNode);
     startHere();
   }
 </script>

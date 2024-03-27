@@ -21,7 +21,7 @@ RUN pip install -r requirements.txt
 
 RUN pip install gunicorn
 
-COPY . ./knowledgePath
+COPY ./knowledgePath ./knowledgePath
 
 WORKDIR /code/knowledgePath
 

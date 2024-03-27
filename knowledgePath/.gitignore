@@ -9,5 +9,3 @@ database_backups/
 core/static/app.js
 /node_modules
 /deploy/docker-compose-prod.yml
-.DS_store
-/oldenv

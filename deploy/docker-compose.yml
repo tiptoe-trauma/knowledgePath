@@ -1,10 +1,18 @@
 version: "3.10"
 services:
+  triplestore:
+    image: ontotext/graphdb:10.4.1
+    volumes:
+      - kp-triplestore-persist:/opt/graphdb/home
+    ports:
+      - "7200:7200"
   django:
-    build: ../
+    image: jmwhorton/knowledge-path:latest
     ports:
       - "45000:3000"
     environment:
-      - TRIPLESTORE_URL=xxxxxxxxxxxx
-      - TRIPLESTORE_PASSWORD=xxxxxxxxxxx
+      - TRIPLESTORE_URL=http://triplestore:7200/repositories/tiptoe
+volumes:
+  kp-triplestore-persist:
+    external: true
 
