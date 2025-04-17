@@ -8,10 +8,20 @@ var labels;
 var boxes;
 
 
+// Function to calculate text width
+function getTextWidth(text, font) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = font;
+  const metrics = context.measureText(text);
+  return metrics.width;
+}
+
 function addLabels(d, thisElement) {
 
   var infoContainer = document.getElementById("info-container");
   var typeNames = ""
+  var formattedTypes = ""
   for (var link of graph.links) {
     if (link.predicate == 'is a' && link.source == d){
       link.target['enabled'] = false
@@ -20,12 +30,25 @@ function addLabels(d, thisElement) {
        typeNames += ", "; // Add a comma and space if not the first class
       }
       typeNames += link.target.label;
+      //possible substitution for 'homo sapiens'
+      //if (link.target.label == "Homo sapiens") {
+      //  typeNames += 'Administrative Staff'
+
+      //} else {
+
+      //  typeNames += link.target.label;
+      //}
     }
   }
 
   if (typeNames.length > 0) {
+    // Split typeNames by comma and join with line breaks
+    var typesArray = typeNames.split(',');
+    formattedTypes = typesArray.join(",\n");
+
     typeNames = '\nTypes: ' + typeNames 
     //infoContainer.innerHTML += typeNames;
+    formattedTypes = '\nTypes: ' + formattedTypes
   }
 
   var roleNames = ""
@@ -58,7 +81,7 @@ function addLabels(d, thisElement) {
   textElement.selectAll("tspan").remove();
   //console.log('text element ' + textElement)
   
-  additions = typeNames + formattedRoles
+  additions = formattedTypes + formattedRoles
 
   // Split the newText into an array of lines
   var lines = additions.split('\n');
@@ -80,7 +103,7 @@ function addLabels(d, thisElement) {
   var padding = 10; // Adjust thisElement value as needed
   thisElement.select("rect")
     .attr("width", textElement.getBBox().width + padding * 2)
-    .attr("height", textHeight + padding * 2);
+    .attr("height", textHeight + 20);
 }
 
 // Peek at the top element without removing it
@@ -139,11 +162,21 @@ function setrdf(triplesvar, targetvar) {
 }
 
 function startHere() {
-  
-  svg = d3.select("#svg-body").append("svg")
-          .attr('width', 1200)
-          .attr('height', 600)
-          .append("g")
+
+  svgBody = d3.select("#svg-body");
+
+  scrollContainer = svgBody.append("div")
+    .style("overflow", "auto")
+    .style("width", "100%")
+    .style("max-height", "600px")
+    .style("overflow-x", "auto")
+    .style("overflow-y", "auto");
+
+  // Append SVG element
+  svg = scrollContainer.append("svg")
+    .attr('width', 1200)
+    .attr('height', 600)
+    //.append("g");
 
   width = 1200;
   height = 600;
@@ -164,6 +197,7 @@ function startHere() {
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2));;
 
+  stack = []
   initializeDisplay();
   initializeSimulation();
 }
@@ -189,7 +223,7 @@ function initializeSimulation() {
   stack = [];
   labels = [];
   boxes = [];
-  stack.push(focus);
+  stack.push(focus.id);
   //console.log('stack ' + stack)
 
   activeId = focus;
@@ -362,13 +396,17 @@ function triplesToGraph(triples){
 		var predLabel = triple.plabel;
 		var objLabel = triple.olabel;
 
+    if (predId == 'http://www.w3.org/2000/01/rdf-schema#label') {
+      return;
+    }
+
    //console.log('start here')
     if (predLabel == 'has part') {
      //console.log('has part ' + subjLabel)
     }
-    if (subjLabel.startsWith("x") && subjLabel.length === 22) {
-      subjLabel = 'bnode'
-    }
+    //if (subjLabel.startsWith("x") && subjLabel.length === 22) {
+    //  subjLabel = 'bnode'
+    //}
 
     let anotherDictionary = {
       "bnode:http://cafe-trauma.com/bnode/orth4072": "Orthopedic Liaison",
@@ -378,9 +416,9 @@ function triplesToGraph(triples){
       "bnode:http://cafe-trauma.com/bnode/u4073": "Program Staff",
       "bnode:http://cafe-trauma.com/bnode/an4072": "Anesthesiology Liaison",
       "http://purl.obolibrary.org/obo/OOSTT_167/emergency_medicine_liaison": "Emergency Medicine Liaison",
-      "bnode:http://cafe-trauma.com/bnode/y4098": "Critical Care Trauma Surgeons",
-      "bnode:http://cafe-trauma.com/bnode/v4123": "Central Arkansas",
-      "bnode:http://cafe-trauma.com/bnode/v4122": "Northwest Arkansas",
+      "bnode:http://cafe-trauma.com/bnode/y4098": "Critical Care Trauma Surgeons more text more more more",
+      "bnode:http://cafe-trauma.com/bnode/v4123": "Central Kansas",
+      "bnode:http://cafe-trauma.com/bnode/v4122": "Northeast Kansas",
       "http://purl.obolibrary.org/obo/GEO_000000151": "Geographic Region",
       "bnode:http://cafe-trauma.com/bnode/emr4072": "Emergency Medicine Liaison Role",
       "bnode:http://cafe-trauma.com/bnode/z4089": "Certified Trauma Surgeon Role",
@@ -391,27 +429,72 @@ function triplesToGraph(triples){
       "bnode:http://cafe-trauma.com/bnode/rar4072": "Radiology Liaison Role",
       "bnode:http://cafe-trauma.com/bnode/y4073" : "Trauma System Development",
       "bnode:http://cafe-trauma.com/bnode/z4073" : "Trauma System Plan",
-      "http://purl.obolibrary.org/obo/OOSTT_167/trauma_program": "UAMS Trauma Program",
-      "bnode:http://cafe-trauma.com/bnode/x4073": "State of Arkansas",
+      "http://purl.obolibrary.org/obo/OOSTT_167/trauma_program": "Your Trauma Program",
+      "bnode:http://cafe-trauma.com/bnode/x4073": "State of Kansas",
 
 
+      "bnode:http://cafe-trauma.com/bnode/orth6298": "Orthopedic Liaison",
+      "bnode:http://cafe-trauma.com/bnode/ns6298": "Neurosurgury Liaison",
+      "bnode:http://cafe-trauma.com/bnode/cc6298": "Critical Care Liaison",
+      "bnode:http://cafe-trauma.com/bnode/ra6298": "Radiology Liaison",
+      "bnode:http://cafe-trauma.com/bnode/u6299": "Program Staff",
+      "bnode:http://cafe-trauma.com/bnode/an6298": "Anesthesiology Liaison",
+      "http://purl.obolibrary.org/obo/OOSTT_167/emergency_medicine_liaison": "Emergency Medicine Liaison",
+      "bnode:http://cafe-trauma.com/bnode/y6327": "Critical Care Trauma Surgeons more text more more more",
+      "bnode:http://cafe-trauma.com/bnode/v6291": "Central Kansas",
+      "bnode:http://cafe-trauma.com/bnode/v6292": "Northeast Kansas",
+      "bnode:http://cafe-trauma.com/bnode/y6324": "General Surgeons current in ATLS",
+      "bnode:http://cafe-trauma.com/bnode/y6321": "Emergency Surgeons current in ATLS",
+      "bnode:http://cafe-trauma.com/bnode/y6320": "Emergency Physicians",
+      "bnode:http://cafe-trauma.com/bnode/y6319": "Emergency Physicians current in ATLS",
+      "bnode:http://cafe-trauma.com/bnode/y6325": "Anesthesiologists on trauma panel",
+      "bnode:http://cafe-trauma.com/bnode/y6328": "Orthopedic Surgeons on trauma panel with CME",
+      "bnode:http://cafe-trauma.com/bnode/y6329": "Orthopedic Surgeons on trauma panel",
+      "bnode:http://cafe-trauma.com/bnode/y6330": "Orthopedic Surgeons with on call exclusivity",
+      "bnode:http://cafe-trauma.com/bnode/y6331": "Board certified Neurosurgeons on trauma panel",
+      "bnode:http://cafe-trauma.com/bnode/y6332": "Neurosurgeons on trauma panel with CME",
+      "bnode:http://cafe-trauma.com/bnode/y6333": "Neurosurgeons with on call exclusivity",
+      "bnode:http://cafe-trauma.com/bnode/y6334": "Trauma Surgeons on trauma panel with CME",
+      "bnode:http://cafe-trauma.com/bnode/y6335": "Trauma Surgeons with on call exclusivity",
+      "bnode:http://cafe-trauma.com/bnode/y6336": "TMD-approved orthopedic surgeon backup call schedule",
+      "bnode:http://cafe-trauma.com/bnode/z6324": "6",
+      "http://purl.obolibrary.org/obo/OBI_0000295": "Count:",
+      "is_specified_input_of": "Count:",
+      "bnode:http://cafe-trauma.com/bnode/z6333": "2",
+      "bnode:http://cafe-trauma.com/bnode/z6332": "3",
+      "has value specification": "has value",
+      "https://cafe-trauma.com/cafe/mean_los/mean_los_1": "mean length of stay",
+      "https://cafe-trauma.com/cafe/mortality/mortality_1": "mortality rate",
+      "https://cafe-trauma.com/cafe/patient_population/patient_population_1": "Your patient population",
+      "http://purl.obolibrary.org/obo/OOSTT/temp/has_patient_outcome_measure": "has patient outcome measure",
+      "http://purl.obolibrary.org/obo/OOSTT/temp/serves_population": "serves population",
+      
     };
 
 
-    //console.log(subjLabel)
-    if (anotherDictionary.hasOwnProperty(subjLabel)) {
-      //console.log('match')
-      subjLabel = anotherDictionary[subjLabel]
-    }
+    //replacement text for demo
+    //if (anotherDictionary.hasOwnProperty(subjLabel)) {
+    //  //console.log('match')
+    //  subjLabel = anotherDictionary[subjLabel]
+    //}
 
-    if (objLabel.startsWith("x") && objLabel.length === 22) {
-      //console.log('match')
-      objLabel = 'bnode'
-    }
+    //if (anotherDictionary.hasOwnProperty(predLabel)) {
+    //  //console.log('match')
+    //  predLabel = anotherDictionary[predLabel]
+    //}
 
-    if (anotherDictionary.hasOwnProperty(objLabel)) {
-      objLabel = anotherDictionary[objLabel]
-    }
+    //if (objLabel.startsWith("x") && objLabel.length === 22) {
+    //  //console.log('match')
+    //  objLabel = 'bnode'
+    //}
+
+    //if (anotherDictionary.hasOwnProperty(objLabel)) {
+    //  objLabel = anotherDictionary[objLabel]
+    //}
+
+    //if (subjLabel.startsWith('bnode') || objLabel.startsWith('bnode')) {
+    //  return;
+    //}
 
 
 		var subjNode = filterNodesById(graph.nodes, subjId)[0];
@@ -465,7 +548,8 @@ function triplesToGraph(triples){
 
   //focus = graph.nodes.find(node => node.id === "http://purl.obolibrary.org/obo/OOSTT_154/trauma_program");
   focus = graph.nodes.find(node => node.id === targetNode);
-  //console.log(focus)
+  console.log(targetNode)
+  console.log(focus)
   //console.log('updating')
   updateDistances()
 
@@ -579,16 +663,7 @@ function initializeDisplay(){
 	    .attr("points", "0,-5 10,0 0,5")
 	    ;
 
-	// ==================== Add Links ====================
-	links = svg.selectAll(".link")
-						.data(graph.links)
-						.enter()
-						.append("line")
-							.attr("marker-end", "url(#end)")
-							.attr("class", "link")
-							.attr("stroke-width",1)
-              .attr("stroke", "transparent")
-					;//links
+
 
 	// ==================== Add Link Names =====================
 	linkTexts = svg.selectAll(".link-text")
@@ -628,6 +703,8 @@ nodes = svg.append("g")
   .enter()
   .append("g")
   .attr("class", "node")
+  .attr("id", d => d.id.replace(/[^a-zA-Z0-9_-]/g, "_")) // Sanitize the id
+  //.attr("id", d => CSS.escape(d.id)) // Bind the id from graph.nodes to the SVG element
   .on('dblclick', doubleClickEvent)
   .on('click', clicked);
 
@@ -646,17 +723,42 @@ nodes.append("rect")
 // Append a text element to each group
 nodes.append("text")
   .text(function(d) {
-    const lastSlashIndex = d.label.lastIndexOf('/');
-    if (lastSlashIndex >= 0) {
-      const substringAfterLastSlash = d.label.substring(lastSlashIndex + 1);
-      return substringAfterLastSlash.length <= 25
-        ? substringAfterLastSlash
-        : substringAfterLastSlash.substring(0, 25) + '...';
-    } else {
-      return d.label.length <= 20
-        ? d.label
-        : d.label.substring(0, 20) + '...';
-    }
+      const lastSlashIndex = d.label.lastIndexOf('/');
+      let text = "";
+      if (lastSlashIndex >= 0) {
+        text = d.label.substring(lastSlashIndex + 1);
+      } else {
+        text = d.label;
+      }
+      var maxWidth = 185; // Maximum width of the box
+      if (d.id == peek(stack)) {maxWidth = 1000;}
+      const textWidth = getTextWidth(text, "12px Arial"); // Function to get text width
+      if (textWidth > maxWidth) {
+        const ellipsisWidth = getTextWidth("...", "12px Arial");
+        const availableWidth = maxWidth - ellipsisWidth;
+        let truncatedText = "";
+        for (let i = 0; i < text.length; i++) {
+          const newText = truncatedText + text[i] + "...";
+          const newWidth = getTextWidth(newText, "12px Arial");
+          if (newWidth > availableWidth) {
+            break;
+          }
+          truncatedText += text[i];
+        }
+        return truncatedText + "...";
+      }
+      return text;
+    // const lastSlashIndex = d.label.lastIndexOf('/');
+    // if (lastSlashIndex >= 0) {
+    //   const substringAfterLastSlash = d.label.substring(lastSlashIndex + 1);
+    //   return substringAfterLastSlash.length <= 25
+    //     ? substringAfterLastSlash
+    //     : substringAfterLastSlash.substring(0, 25) + '...';
+    // } else {
+    //   return d.label.length <= 20
+    //     ? d.label
+    //     : d.label.substring(0, 20) + '...';
+    // }
   })
   .style("font-size", "12px")
   .style('fill', 'white');
@@ -682,6 +784,19 @@ nodes.each(function() {
     .attr("width", textWidth + padding);
 });
 
+	// ==================== Add Links ====================
+  console.log('nodes')
+  console.log(nodes)
+	links = svg.selectAll(".link")
+						.data(graph.links)
+						.enter()
+      .append("path")
+    .attr("class", "link")
+    .attr("fill", "none")
+    .attr("stroke", "#555")
+    .attr("stroke-opacity", 0.4)
+    .attr("stroke-width", 1.5)
+    .attr("marker-end", "url(#end)")
 
 	// ==================== Force ====================
 	// ==================== Run ====================
@@ -693,6 +808,8 @@ function clicked(d){
   //console.log('stack ' + stack)
  //console.log("clicked");
   
+  console.log("CLICKED");
+  console.log(d);
 
 
   textElement = svg.selectAll("text")
@@ -708,7 +825,8 @@ function clicked(d){
     var padding = 10; // Adjust this value as needed
   
     d3.select(this).select("rect")
-      .attr("width", textElement.node().getBBox().width + padding * 2)
+      //.attr("width", textElement.node().getBBox().width + padding * 2)
+      .attr("width", 210)
       .attr("height", textHeight + padding * 2);
   });
 
@@ -821,6 +939,9 @@ function clicked(d){
   clickedNode = graph.nodes.find(node => node.id === activeId)
   findNode =graph.nodes.find(node => node.id === stack[stack.length-1])
 
+  console.log("THE STACK");
+  console.log(stack);
+
   while (stack.length >= 1 && graph.nodes.find(node => node.id === stack[stack.length-1]).level >= clickedNode.level) {
     stack.pop()
   }
@@ -878,6 +999,8 @@ function clicked(d){
     return d.id == findId;
 
   });
+  console.log("FIND CLICK");
+  console.log(findElement);
   //console.log('add labels this')
   //console.log('d ' + d)
   //console.log('this ' + d3.select(this))
@@ -1021,7 +1144,7 @@ function updateDisplay() {
     });
     links.style('opacity', function(o){
       if(o.source.enabled && o.target.enabled) {
-        return 0;
+        return 1;
       }else return 0;
     });
     linkTexts.style('opacity', function(o){
@@ -1034,12 +1157,98 @@ function updateDisplay() {
         return 'green'
       } else if (stack.includes(o.id)) {
         return 'blue'
-      } else if (activeId == o.id) {
-        return 'blue'
       } else {
         return 'LightSlateGray'
       }
-    });
+    })
+  ;
+
+  var activeNode = nodes.filter(function(o){return (activeId == o.id)})
+  var stackNodes = nodes.filter(function(o){return (activeId != o.id && stack.includes(o.id))})
+  var categoryNodes = nodes.filter(function(o){return (activeId != o.id && !stack.includes(o.id))})
+
+  //activeNode.selectAll('rect').style('fill', 'green').style('height', function(o){}).style('stroke', 'none')
+  //activeNode.selectAll('text').style('fill', 'white')
+  //stackNodes.selectAll('rect').style('fill', 'blue').style('height', function(o){}).style('stroke', 'none')
+  //stackNodes.selectAll('text').style('fill', 'white')
+  //categoryNodes.selectAll('rect').style('fill', 'white').style('height', 20).style('stroke', function(o) {
+  //  if (o.id.startsWith("gen")) {
+  //    return 'blue'
+  //  } else {
+  //    return 'red'
+  //  }
+  //})
+  //categoryNodes.selectAll('text').style('fill', 'black').attr('transform', 'translate(5, 0)');
+  
+  nodes.selectAll('rect').style('fill', 'white').style('height', 20).style('stroke', function(o) {
+    if (o.label.includes("Kansas")) {
+      return 'blue'
+    } else {
+      return 'red'
+    }
+  })
+      .on("mouseover", function() {
+        d3.select(this).style("fill", "orange");
+      })
+      .on("mouseout", function() {
+        d3.select(this).style("fill", "white");
+      });
+  nodes.selectAll('text').style('fill', 'black').style('pointer-events', 'none').attr('transform', 'translate(5, 0)')
+    .select(function() {
+        return this.firstChild; // Select only the first child node
+    }).text(function(d) {
+        const lastSlashIndex = d.label.lastIndexOf('/');
+        let text = "";
+        if (lastSlashIndex >= 0) {
+          text = d.label.substring(lastSlashIndex + 1);
+        } else {
+          text = d.label;
+        }
+        var maxWidth = 185; // Maximum width of the box
+        if (d.id == peek(stack)) {maxWidth = 1000;}
+        const textWidth = getTextWidth(text, "12px Arial"); // Function to get text width
+        if (textWidth > maxWidth) {
+          const ellipsisWidth = getTextWidth("...", "12px Arial");
+          const availableWidth = maxWidth - ellipsisWidth;
+          let truncatedText = "";
+          for (let i = 0; i < text.length; i++) {
+            const newText = truncatedText + text[i] + "...";
+            const newWidth = getTextWidth(newText, "12px Arial");
+            if (newWidth > availableWidth) {
+              break;
+            }
+            truncatedText += text[i];
+          }
+          return truncatedText + "...";
+        }
+        return text;
+      // const lastSlashIndex = d.label.lastIndexOf('/');
+      // if (lastSlashIndex >= 0) {
+      //   const substringAfterLastSlash = d.label.substring(lastSlashIndex + 1);
+      //   return substringAfterLastSlash.length <= 25
+      //     ? substringAfterLastSlash
+      //     : substringAfterLastSlash.substring(0, 25) + '...';
+      // } else {
+      //   return d.label.length <= 20
+      //     ? d.label
+      //     : d.label.substring(0, 20) + '...';
+      // }
+    })
+    
+  rectHeight = 0
+  activeNode.selectAll('text').each(function(d) {
+    // `this` refers to the current `<rect>` element in the iteration
+    rectHeight = this.getBBox().height;
+    console.log("Height of node", d.id, ":", rectHeight);
+});
+
+
+  activeNode.selectAll('rect').style('height', rectHeight + 6) 
+
+
+
+
+
     //nodes
     //    .attr("r", 8) 
     //    //.attr("r", forceProperties.collide.radius)
@@ -1105,6 +1314,11 @@ function calculateNodeWidth(node) {
 }
 
 function ticked() {
+  currentArrows = []
+  arrowLinks = svg.selectAll(".arrowlink")
+    .data(currentArrows);
+  arrowLinks.exit().remove();
+
 
   for (let label of labels) {
     label.remove()
@@ -1112,6 +1326,15 @@ function ticked() {
 
   for (let box of boxes) {
     box.remove()
+  }
+  
+  if (activeId != null) {
+    console.log(activeId)
+    activeNode = graph.nodes.find(node => node.id === activeId)
+    activeNode.x = width * .2 * activeNode.level + (width * .025)
+    activeNode.fx = width * .2 * activeNode.level + (width * .025)
+    activeNode.y = height * .5; // Set the desired y-coordinate
+    activeNode.fy = height * .5; // Set the desired y-coordinate
   }
 
 	nodes
@@ -1140,17 +1363,30 @@ function ticked() {
   labels = []
   boxes = []
   if (stack.length > 0) {
+    currentArrows = []
+
+      xVal = stack.length * width * .2 + (width * .025)
+      rectElement = svg.select(".nodes").selectAll('rect').filter(function (d) {
+        return d.id == activeId;
+      });
+      console.log('rect')
+      rectWidth = rectElement.attr('width')
+      console.log(rectWidth)
+      widthOffset = rectWidth - 190
+      if (widthOffset < 0) {widthOffset = 0;}
+      xVal = xVal + widthOffset
+
+
     for (let key in categories) {
       boxTop = offset
-      xVal = stack.length * width * .2 + (width * .025)
       const valList = categories[key]
       label = svg.append("text")
       .attr("x", xVal) // Adjust the position based on your preference
       .attr("y", offset)
       .text(key)
       .style("text-decoration", "underline")
-      .style("font-size", "12px")
-      .style("fill", "white");
+      .style("font-size", "12px");
+      //.style("fill", "white");
       offset += 25
       labels.push(label)
 
@@ -1158,38 +1394,101 @@ function ticked() {
       for (let i = 0; i < valList.length; i++) {
         val = valList[i]
         node = graph.nodes.find( node => node.id === val)
+        node.x = xVal
+        node.y = offset
         nodes.filter(function(d) {
           // Use a condition to filter nodes
           return d.id == val;
         })
           .attr("transform", function(d) {
             return "translate(" + xVal + "," + offset + ")";
-        });
-        offset += 25
+        })
+          .attr('x', xVal)
+          .attr('y', offset);
+        offset += 30
       }
       boxBottom = offset
       box = svg.insert("rect", ":first-child")
-        .attr("x", stack.length * width * .2 + (width * .025))
+        .attr("x", xVal - 5)
         .attr("y", boxTop - 12)
-        .attr("width", 190)
-        .attr("height", boxBottom - boxTop + 10)
+        .attr("width", 220)
+        .attr("height", boxBottom - boxTop + 15)
         .attr("rx", 5) // Optional: round corners
         .attr("ry", 5) // Optional: round corners
-        .style("stroke", "black")
-        .style("stroke-width", 2)
-        .style("fill", "LightSlateGray");
+        //.style("stroke", "black")
+        //.style("stroke-width", 2)
+        //.style("fill", "LightSlateGray");
+        .style("fill", "Gainsboro");
       boxes.push(box)
+      rectElement = svg.select(".nodes").selectAll('rect').filter(function (d) {
+        return d.id == activeId;
+      });
+      console.log('rect')
+      rectWidth = rectElement.attr('width')
+      console.log(rectWidth)
+      //currentArrows.push({targetX: stack.length * width * .2 + (width * .025) - 5, targetY: boxTop + ((boxBottom - boxTop) / 2), source: graph.nodes.find(node => node.id === activeId)})
+      currentArrows.push({targetX: xVal - 5, targetY: boxTop + ((boxBottom - boxTop) / 2), source: activeNode.x, width: rectWidth})
       offset += 25
     }
   }
 
+  for (let x = stack.length - 1; x > 0; x --) {
+    currentArrows.push({targetX: x * width * .2 + (width * .025), targetY: height / 2, source: (x-1) * width * .2 + (width * .025),  width: 190})
+  }
 
-	links
-		.attr("x1", 	function(d)	{ return calculateNodeWidth(d.source) + d.source.x;})
-        .attr("y1", 	function(d) { return d.source.y - 4; })
-        .attr("x2", 	function(d) { return d.target.x; })
-        .attr("y2", 	function(d) { return d.target.y - 4; })
-       ;
+
+
+  console.log('example')
+  console.log(currentArrows)
+	arrowLinks = svg.selectAll(".arrowlink")
+						.data(currentArrows)
+						.enter()
+      .append("path")
+    .attr("class", "arrowlink")
+    .attr("fill", "none")
+    .attr("stroke", "#555")
+    .attr("stroke-opacity", 0.4)
+    .attr("stroke-width", 1.5)
+    .attr("marker-end", "url(#end)")
+
+  console.log('links')
+  console.log(arrowLinks)
+	arrowLinks
+    .attr("d", d => {
+      //console.log('start Arrow')
+      //const sourceX = d.source.fx + calculateNodeWidth(d.source) + 20
+      const sourceX = parseFloat(d.source) + parseFloat(d.width); 
+      const sourceY = height / 2;
+      //console.log(d.source.id)
+      console.log('source x ' + sourceX)
+      console.log('source y ' + sourceY)
+      
+      //console.log('target x ' + d.targetX)
+      //console.log('target y ' + d.targetY)
+      //console.log(d.target)
+      const targetX = d.targetX;
+      //const targetY = d.target.y;
+      const targetY = d.targetY;
+
+      // Calculate control points for the curve
+      const controlX1 = sourceX + (targetX - sourceX) * 0.5;
+      const controlY1 = sourceY;
+      const controlX2 = targetX - (targetX - sourceX) * 0.5;
+      const controlY2 = targetY;
+
+      // Construct the path using cubic Bézier curve commands
+      return `M${sourceX},${sourceY} C${controlX1},${controlY1} ${controlX2},${controlY2} ${targetX},${targetY}`;
+
+    });
+  //console.log('arrow links')
+  //console.log(arrowLinks)
+
+
+	//links
+  //        .attr("d", d3.linkHorizontal()
+  //          .x(d => d.source.y)
+  //          .y(d => d.source.x));
+  //     ;
 
 //	nodeTexts
 //		.attr("x", function(d) { return d.x + 2 ; })
@@ -1230,6 +1529,17 @@ function ticked() {
     return "translate(" + x + "," + y + ") rotate(" + angle + ")";
   });
 
+  //updateDisplay()
+  
+  var bbox = svg.node().getBBox();
+
+  // Update the SVG width and height based on the content size
+  svg.attr('width', bbox.width)
+     .attr('height', bbox.height);
+
+  scrollContainer.style("height", bbox.height + "px");
+
+
 
 }
 
@@ -1247,3 +1557,256 @@ function reset() {
   //  );
 }
 
+
+document.addEventListener('DOMContentLoaded', function() {
+  const searchButton = document.getElementById('search-button');
+  searchButton.addEventListener('click', function(event) {
+    event.preventDefault(); // Prevent form submission
+    const searchTerm = document.getElementById('search-term').value.trim();
+    if (!searchTerm) return; // Prevent empty searches
+    findNodeBySearchTerm(searchTerm);
+  });
+});
+
+function selectThisNode(node) {
+  const escapedId = node.id.replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id
+  const selectedNode = d3.select(`#${escapedId}`);
+  console.log("Selected Node:", selectedNode);
+  searchClick(selectedNode.datum());
+}
+
+function findNodeBySearchTerm(searchTerm) {
+  const lowerCaseTerm = searchTerm.toLowerCase();
+  const matches = graph.nodes.filter(node =>
+    node.id.toLowerCase().includes(lowerCaseTerm) ||
+    node.label.toLowerCase().includes(lowerCaseTerm)
+  );
+
+  if (matches.length === 0) {
+    alert('No results found.');
+    return;
+  } else if (matches.length === 1) {
+    // If only one match, select it immediately
+    selectThisNode(matches[0]);
+  } else {
+    // If multiple matches, show a "Did you mean?" popup
+    showDidYouMeanPopup(matches);
+  }
+}
+
+function showDidYouMeanPopup(matches) {
+  // Remove any existing popup
+  const existingPopup = document.getElementById('did-you-mean-popup');
+  if (existingPopup) {
+    existingPopup.remove();
+  }
+
+  // Create the popup container
+  let popup = document.createElement('div');
+  popup.id = 'did-you-mean-popup';
+  popup.style.position = 'absolute';
+  popup.style.background = '#fff';
+  popup.style.border = '1px solid #ccc';
+  popup.style.padding = '10px';
+  popup.style.boxShadow = '2px 2px 10px rgba(0,0,0,0.2)';
+  popup.style.zIndex = '1000';
+
+  let message = document.createElement('p');
+  message.textContent = 'Did you mean:';
+  popup.appendChild(message);
+
+  matches.forEach(node => {
+    let option = document.createElement('div');
+    option.textContent = node.label;
+    option.style.cursor = 'pointer';
+    option.style.padding = '5px';
+    option.style.borderBottom = '1px solid #ddd';
+    option.addEventListener('mouseover', () => option.style.background = '#f0f0f0');
+    option.addEventListener('mouseout', () => option.style.background = 'transparent');
+    option.addEventListener('click', function() {
+      selectThisNode(node);
+      popup.remove();
+    });
+    popup.appendChild(option);
+  });
+
+  // Position the popup near the search input
+  let searchInput = document.getElementById('search-term');
+  let rect = searchInput.getBoundingClientRect();
+  popup.style.left = `${rect.left + window.scrollX}px`;
+  popup.style.top = `${rect.bottom + window.scrollY}px`;
+
+  document.body.appendChild(popup);
+}
+
+
+
+function searchClick(d) {
+  console.log("SEARCH");
+  console.log(d);
+  textElement = svg.selectAll("text")
+  textElement.selectAll("tspan").remove();
+
+
+  elements = svg.selectAll('g')
+  elements.each(function() {
+    //var textHeight = this.select('text').getBBox().height;
+    textElement = d3.select(this).select('text')
+    var textHeight = textElement.node().getBBox().height;
+
+    var padding = 10; // Adjust this value as needed
+  
+    d3.select(this).select("rect")
+      //.attr("width", textElement.node().getBBox().width + padding * 2)
+      .attr("width", 210)
+      .attr("height", textHeight + padding * 2);
+  });
+  active = d3.select(this)
+  activeId = d.id
+  console.log(d);
+  clickedNode = graph.nodes.find(node => node.id === activeId)
+
+  simulation.alpha(1).restart();
+  ticked();
+  updateDisplay()
+
+  stack = [];
+  tempStack = [];
+  curLevel = clickedNode.level;
+  curNode = clickedNode;
+  console.log("cur nodes");
+  while (curLevel > 0) {
+    curLink = graph.links.find(link => (link.target == curNode && link.source.level == curLevel - 1));
+    console.log(curLink);
+    curNode = graph.nodes.find(node => (node.id == curLink.source.id)) ;
+    console.log(curNode.id);
+    tempStack.push(curNode.id);
+    curLevel --;
+  }
+
+  while (tempStack.length > 0) {
+    stack.push(tempStack.pop());
+  }
+  stack.push(clickedNode.id);
+  console.log("THE STACK");
+  console.log(stack);
+  //active.classed("active", true);
+
+  categories = []
+  for (var link of graph.links) {
+    //console.log('target level' + link.target.level)
+    if (link.source.id == peek(stack) && link.target.level > link.source.level) {
+      //console.log('link')
+      //console.log(link)
+      if (!['bearer of', 'bearer_of', 'has role', 'is a'].includes(link.predicate)){
+        if (categories[link.predicate]) {
+          categories[link.predicate].push(link.target.id)
+        } else {
+          categories[link.predicate] = [link.target.id]
+        }
+      }
+    }
+  }
+  //console.log(stack.length)
+  //console.log(stack)
+
+  var infoContainer = document.getElementById("info-container");
+  
+  infoContainer.innerHTML = "Clicked element: " + d.id;
+  infoContainer.innerHTML += "<p>Label (not rdf:label): " + d.label + "</p>";
+
+  for (var node of graph.nodes) {
+    if (node !== d) {
+      distance = shortestDistance(d, node)
+      if (node['level'] > d['level'] && distance ==1) {
+        node['enabled'] = true
+      } else if (node['level'] >= d['level']) {
+        node['enabled'] = false
+      } else if (node['level'] < d['level'] && !stack.includes(node.id)) {
+        node['enabled'] = false;
+      }
+    } else {
+        node['enabled'] = true
+    }
+  }
+  var enabledNodes = graph.nodes.filter(node => node.enabled);
+
+  // Update the simulation to use the enabledNodes array
+  nodes.style('opacity', function(o){
+    if(o.enabled) {
+      return 1;
+    }else return 0;
+  });
+  nodes.style('pointer-events', function(o){
+    if(o.enabled) {
+      return 'auto';
+    }else return 'none';
+  });
+  var disabledNodes = graph.nodes.filter(node => node.enabled == false);
+  simulation.nodes(enabledNodes);
+  // Using the forEach() method
+  disabledNodes.forEach((node) => {
+    // Iterate over each disabled node
+    // You can access properties of each node like node.propertyName
+    node.collideRadius = null;
+    node.radialRadius = null;
+    //console.log('disabled')
+    //console.log(node);
+  });
+
+  simulation.alpha(1).restart();
+  ticked();
+  updateDisplay()
+
+
+  //parentNode = graph.nodes.find(node => node.id === peek(stack))
+  findId = d.id
+  const findElement = d3.selectAll(".node").filter(function (d) {
+    return d.id == findId;
+
+  });
+  console.log("FIND");
+  console.log(findElement);
+  //console.log('add labels this')
+  //console.log('d ' + d)
+  //console.log('this ' + d3.select(this))
+  //console.log(d3.select(this))
+  //addLabels(d, d3.select(this))
+  addLabels(d, findElement)
+  //console.log('add labels')
+  //console.log(textElement)
+
+  nodes.style('opacity', function(o){
+    if(o.enabled) {
+      return 1;
+    }else return 0;
+  });
+  nodes.style('pointer-events', function(o){
+    if(o.enabled) {
+      return 'auto';
+    }else return 'none';
+  });
+
+
+  var enabledNodes = graph.nodes.filter(node => node.enabled);
+
+  // Update the simulation to use the enabledNodes array
+  simulation.nodes(enabledNodes);
+
+  var disabledNodes = graph.nodes.filter(node => node.enabled == false);
+  // Using the forEach() method
+  disabledNodes.forEach((node) => {
+    // Iterate over each disabled node
+    // You can access properties of each node like node.propertyName
+    node.collideRadius = null;
+    node.radialRadius = null;
+    //console.log('disabled')
+    //console.log(node);
+  });
+
+  simulation.alpha(1).restart();
+  ticked();
+  updateDisplay()
+
+
+}

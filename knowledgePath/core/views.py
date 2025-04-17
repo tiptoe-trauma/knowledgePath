@@ -24,6 +24,12 @@ def rdf(request):
     if (request.POST.get('node-select')):
         target = request.POST.get('node-select')
         targetGraph = 'https://cafe-trauma.com/cafe/survey/167'
+    if 'SubmitSearch' in request.POST:
+        #here we search for the search term and focus teh node
+        print('we searchin')
+
+
+
     if request.method == 'POST':
         if target != '':
             triples = getDefinitions(target, targetGraph)
@@ -32,7 +38,9 @@ def rdf(request):
     targetGraph = "'" + targetGraph + "'"
     your_nodes = [
         {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_program', 'label': 'Your Trauma Program'},
+        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/organization', 'label': 'Your Organization'},
         {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_medical_director', 'label': 'Your Trauma Medical Director'},
+        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_program_manager', 'label': 'Your Trauma Program Manager'},
         {'value': 'https://cafe-trauma.com/cafe/person/person_1', 'label': 'Patient 1'},
     ]
     return render(request, 'rdf.html',
@@ -125,11 +133,12 @@ where {
         r = requests.request('POST', settings.TRIPLESTORE_URL, data=body, headers=headers, auth=(settings.TRIPLESTORE_USER, settings.TRIPLESTORE_PASSWORD), verify=False)
         rImp = requests.request('POST', settings.TRIPLESTORE_URL, data=bodyImp, headers=headersImp, auth=(settings.TRIPLESTORE_USER, settings.TRIPLESTORE_PASSWORD), verify=False)
         if r.ok and rImp.ok:
+        #if r.ok:
             try:
                 terms = []
                 data = r.json()
                 dataImp = rImp.json()
-                print(dataImp)
+                #print(dataImp)
                 terms = addTerms(data, terms)
                 terms = addTerms(dataImp, terms)
                 file_path = 'response_content.txt'
