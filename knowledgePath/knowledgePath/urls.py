@@ -23,6 +23,8 @@ from django.conf import settings
 urlpatterns = [
     path(r'graph/', views.graph, name="graph"),
     path(r'rdf/', views.rdf, name='rdf'),
+    path(r'login/', views.login_view, name='login'),
+    path(r'logout/', views.logout_view, name='logout'),
     path(r'^api/play_count_by_month', views.play_count_by_month, name='play_count_by_month'),
     path("admin/", admin.site.urls),
     path("", views.rdf, name="rdf"),
