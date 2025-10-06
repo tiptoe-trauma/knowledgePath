@@ -47,7 +47,13 @@
           <label for="node-select" class="col-form-label">Select Starting Point:</label>
           <select class="form-control" id="node-select" name="node-select">
             {% for option in your_nodes %}
-              <option value="{{ option.value }}"{% if targetNode == "'"|add:option.value|add:"'" %}selected{% endif %}>{{ option.label }}</option>
+              <option value="{{ option.value }}"{% if targetNode.label == "'"|add:option.label|add:"'" %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+          <label for="org-select" class="col-form-label">Select Organization:</label>
+          <select class="form-control" id="org-select" name="org-select">
+            {% for org in organizations %}
+            <option value="{{ org.id}}"{% if targetOrg == org.id|stringformat:"s"  %}selected{% endif %}>{{ org.label}}</option>
             {% endfor %}
           </select>
 
