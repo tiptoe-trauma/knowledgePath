@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>{% block title %}Knowledge Path{% endblock %}</title>
+    <title>{% block title %}Knowledge Path Explorer{% endblock %}</title>
     <script src="{% static 'app.js' %}" ></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 
@@ -15,10 +15,10 @@
         <a class="navbar-brand d-flex align-items-center" href="/">
           UAMS 
         </a>
-        <h1 class="navbar-brand">{% block header_title %}Knowledge Path{% endblock %}</h1>
+        <h1 class="navbar-brand">{% block header_title %}Knowledge Path Explorer{% endblock %}</h1>
         <div class="nav">
             {% block nav_link %}{% endblock %}
-            <a class="nav-link text-light" href="/accounts/logout">Logout</a>
+            <a class="nav-link text-light" href="/logout">Logout</a>
         </div>
       </div>
     </div>
