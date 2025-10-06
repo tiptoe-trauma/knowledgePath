@@ -1,13 +1,19 @@
 import requests
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.db import connections
 from django.db.models import Count
 from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
+from django.core.mail import send_mail
 from rdflib import Graph, BNode, URIRef, Literal, Namespace
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
 
-from .models import Play
+from .models import * 
 
 
 def index(request):
@@ -17,37 +23,141 @@ def index(request):
 def graph(request):
     return render(request, 'graph.html')
 
+def logout_view(request):
+    # Log out the user
+    logout(request)
+
+    return redirect('login')
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('rdf')
+    else:
+        if request.method == 'POST':
+            userEmail = request.POST.get('username')
+
+            try:
+                user = User.objects.using('tiptoeDB').get(email=userEmail)
+                token, _ = Token.objects.using('tiptoeDB').get_or_create(user=user)
+
+                if (settings.LOGIN_URL):
+                    login_url = 'https://{}/?token={}'.format(settings.LOGIN_URL, token)
+                else:
+                    login_url = 'http://{}/?token={}'.format(request.get_host(), token)
+
+                if (settings.EMAIL_HOST and settings.EMAIL_HOST != 'localhost'):
+                    print(settings.EMAIL_HOST)
+                    email_message = "Here is your login URL for Knowledge Path Explorer\n\n{}".format(login_url)
+                    send_mail(
+                            'Knowledge Path Explorer Login',
+                            email_message,
+                            'questionnaire_retrieval@tiptoe.apps.dbmi.cloud',
+                            [user.email],
+                            fail_silently=False,
+                            )
+                else:
+                    print(login_url)
+
+
+                #user = authenticate(request, token=token)
+                #print('post user')
+                #print(user)
+                #if user is not None:
+                #    print('trying to login')
+                #    login(request, user)
+                #    print("Session after login:", request.session.items())  # Print session data
+
+                #    print(request.user.is_authenticated)
+                #    print('logged in')
+                #    print(request.session.session_key)
+                #    response = redirect('rdf')
+                #    print(request.user)
+                #    print(response.cookies)
+                #    return redirect('rdf')
+
+            except User.DoesNotExist:
+                error = "User not found"
+
+            #print(token)
+            return render(request, 'login_notice.html',
+                  {})
+             
+
+        elif request.method == 'GET':
+            requestToken = request.GET.get('token')
+            if requestToken:
+                user = authenticate(request, token=requestToken)
+                if user is not None:
+                    login(request, user)
+                    return redirect('rdf')
+
+            return render(request, 'login.html', {})
+
+@api_view(['POST'])
+def token_login(request):
+    body = json.loads(request.body.decode('utf-8'))
+    login_token = body.get('login_token')
+    try:
+        token = Token.objects.using('tiptoeDB').get(key=login_token)
+        return Response({'token': token.key})
+    except Token.DoesNotExist:
+        return Response("Invalid login token", status=404)
+    return Response("Server Error", status=500)
+
 def rdf(request):
-    triples = None
-    target = request.POST.get('target-node') or ''
-    targetGraph = request.POST.get('target-graph') or ''
-    if (request.POST.get('node-select')):
-        target = request.POST.get('node-select')
-        targetGraph = 'https://cafe-trauma.com/cafe/survey/167'
-    if 'SubmitSearch' in request.POST:
-        #here we search for the search term and focus teh node
-        print('we searchin')
+    print(request.session.session_key) 
+    print(request.user)
+    if request.user.is_authenticated:
+        organizations = Organization.objects.using('tiptoeDB').filter(users=request.user)
+        orgs = [{'id':org.id, 'label': str(org)} for org in organizations]
+
+        triples = None
+        targetNode = request.POST.get('target-node') or ''
+        targetGraph = request.POST.get('target-graph') or ''
+        targetOrg = request.POST.get('target-org') or ''
+        latest_survey = None
+        if (request.POST.get('node-select') and request.POST.get('org-select')):
+            targetNode = request.POST.get('node-select')
+            targetOrg = request.POST.get('org-select')
+            print(targetOrg)
+            org = Organization.objects.using('tiptoeDB').get(id=targetOrg)
+            print(org)
+            latestSurvey = Survey.objects.using('tiptoeDB').filter(organization=org.id, approved=True).order_by('-date').first()
+            print(latestSurvey)
+
+            #targetGraph = 'https://cafe-trauma.com/cafe/survey/167'
+        if 'SubmitSearch' in request.POST:
+            #here we search for the search term and focus teh node
+            print('we searchin')
 
 
 
-    if request.method == 'POST':
-        if target != '':
-            triples = getDefinitions(target, targetGraph)
-    
-    target = "'" + target + "'"
-    targetGraph = "'" + targetGraph + "'"
-    your_nodes = [
-        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_program', 'label': 'Your Trauma Program'},
-        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/organization', 'label': 'Your Organization'},
-        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_medical_director', 'label': 'Your Trauma Medical Director'},
-        {'value': 'http://purl.obolibrary.org/obo/OOSTT_167/trauma_program_manager', 'label': 'Your Trauma Program Manager'},
-        {'value': 'https://cafe-trauma.com/cafe/person/person_1', 'label': 'Patient 1'},
-    ]
-    return render(request, 'rdf.html',
+        print('we should show results')
+        if request.method == 'POST':
+            if targetNode != '' and latestSurvey != None:
+                print('we should show results')
+                triples = getDefinitions(targetNode.replace('<survey>', str(latestSurvey.id)), latestSurvey)
+                targetNode = "'" + targetNode.replace('<survey>', str(latestSurvey.id)) + "'"
+        
+        targetGraph = "'" + targetGraph + "'"
+        your_nodes = [
+            {'value': 'http://purl.obolibrary.org/obo/OOSTT_<survey>/trauma_program', 'label': 'Your Trauma Program'},
+            {'value': 'http://purl.obolibrary.org/obo/OOSTT_<survey>/organization', 'label': 'Your Organization'},
+            {'value': 'http://purl.obolibrary.org/obo/OOSTT_<survey>/trauma_medical_director', 'label': 'Your Trauma Medical Director'},
+            {'value': 'http://purl.obolibrary.org/obo/OOSTT_<survey>/trauma_program_manager', 'label': 'Your Trauma Program Manager'},
+            {'value': 'https://cafe-trauma.com/cafe/person/person_1', 'label': 'Patient 1'},
+        ]
+        print(your_nodes)
+        return render(request, 'rdf.html',
                   {'triples': triples,
-                   'targetNode': target,
+                   'targetNode': targetNode,
                    'targetGraph': targetGraph,
-                   'your_nodes': your_nodes})
+                   'targetOrg': targetOrg,
+                   'your_nodes': your_nodes,
+                   'organizations': orgs})
+    else:
+        print('redirect to login')
+        return redirect('login')
 
 
 def play_count_by_month(request):
@@ -64,7 +174,8 @@ def play_count_by_month(request):
 
 
 
-def getDefinitions(target, targetGraph):
+def getDefinitions(target, latestSurvey):
+    targetGraph = 'https://cafe-trauma.com/cafe/survey/' + str(latestSurvey.id)
     query =  """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -107,7 +218,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 select ?s ?p ?o ?slabel ?plabel ?olabel
 where {
-    GRAPH <https://cafe-trauma.com/cafe/survey/167_imp_test> {
+    GRAPH <<targetGraph>> {
 
         ?s ?p ?o .
     } OPTIONAL {
@@ -123,7 +234,7 @@ where {
     #target = '<http://purl.obolibrary.org/obo/OOSTT_154/trauma_medical_director>'
     query = query.replace('<target>', target )
     query2 = query2.replace('<targetGraph>', targetGraph )
-    queryImp = queryImp.replace('<targetGraph>', targetGraph )
+    queryImp = queryImp.replace('<targetGraph>', targetGraph + '_imp_test')
 
     body = {'query': query2, 'Accept': 'application/sparql-results+json' }
     bodyImp = {'query': queryImp, 'Accept': 'application/sparql-results+json' }
