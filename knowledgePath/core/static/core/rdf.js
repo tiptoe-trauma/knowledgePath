@@ -1,11 +1,32 @@
 var focus;
 var graph;
 var stack;
+var pinnedStacks;
 var activeId;
 var categoryBoxes;
 var categories;
 var labels;
 var boxes;
+
+function nodeInDict(node, dict) {
+    for (let key in dict) {
+        if (dict[key].includes(node)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getNodeStackOrder(node, stacks) {
+    const sortedKeys = Object.keys(stacks).sort();
+    for (let i = 0; i < sortedKeys.length; i++) {
+        if (stacks[sortedKeys[i]].includes(node)) {
+            return i + 1; // 1-based index
+        }
+    }
+    return null; // Not found
+}
+
 
 
 // Function to calculate text width
@@ -15,6 +36,40 @@ function getTextWidth(text, font) {
   context.font = font;
   const metrics = context.measureText(text);
   return metrics.width;
+}
+
+function findType(d) {
+  var typeNames = ""
+  var formattedTypes = ""
+  var typesArray = [];
+  for (var link of graph.links) {
+    if (link.predicate == 'is a' && link.source == d){
+      if (typeNames.length > 0) {
+       typeNames += ", "; // Add a comma and space if not the first class
+      }
+      typeNames += link.target.label;
+      typesArray.push(link.target.label);
+      //possible substitution for 'homo sapiens'
+      //if (link.target.label == "Homo sapiens") {
+      //  typeNames += 'Administrative Staff'
+
+      //} else {
+
+      //  typeNames += link.target.label;
+      //}
+    }
+  }
+
+  if (typesArray.includes('collection of humans')) {
+    return 'people';
+  } else if (typesArray.includes('Homo sapiens')) {
+    return 'person';
+  } else if (typesArray.includes('Geographic Region')) {
+    return 'geographic';
+  } else {
+    return 'none';
+  }
+
 }
 
 function addLabels(d, thisElement) {
@@ -77,11 +132,19 @@ function addLabels(d, thisElement) {
 
 
   textElement = thisElement.select("text")
+
+  let textNode = thisElement.select("text").node();
+  let width = textNode.getComputedTextLength();
+  console.log(textNode.textContent);
+  console.log('this is the width ' + width);
+
+
   //console.log('text element ' + textElement)
   textElement.selectAll("tspan").remove();
   //console.log('text element ' + textElement)
   
-  additions = formattedTypes + formattedRoles
+  //additions = formattedTypes + formattedRoles
+  additions = formattedRoles
 
   // Split the newText into an array of lines
   var lines = additions.split('\n');
@@ -102,8 +165,9 @@ function addLabels(d, thisElement) {
   var textHeight = textElement.getBBox().height;
   var padding = 10; // Adjust thisElement value as needed
   thisElement.select("rect")
-    .attr("width", textElement.getBBox().width + padding * 2)
+    .attr("width", Math.max(width, textElement.getBBox().width + padding * 2))
     .attr("height", textHeight + 20);
+
 }
 
 // Peek at the top element without removing it
@@ -208,11 +272,11 @@ function initializeSimulation() {
   //const nodeWithLocation = graph.nodes.find(node => node.id === "http://purl.obolibrary.org/obo/OOSTT_154/trauma_program");
   const nodeWithLocation = graph.nodes.find(node => node.id === targetNode);
   //const nodeWithLocation = targetNode
-  console.log(nodeWithLocation)
+  //console.log(nodeWithLocation)
   nodeWithLocation.x = width * .025; // Set the desired x-coordinate
   nodeWithLocation.fx = width * .025; // Set the desired x-coordinate
-  console.log(width * .025)
-  console.log(nodeWithLocation.fx)
+  //console.log(width * .025)
+  //console.log(nodeWithLocation.fx)
   nodeWithLocation.y = height * .5; // Set the desired y-coordinate
   nodeWithLocation.fy = height * .5; // Set the desired y-coordinate
 
@@ -221,6 +285,7 @@ function initializeSimulation() {
 
   focus = targetNode;
   stack = [];
+  pinnedStacks = {}
   labels = [];
   boxes = [];
   stack.push(focus.id);
@@ -417,8 +482,8 @@ function triplesToGraph(triples){
       "bnode:http://cafe-trauma.com/bnode/an4072": "Anesthesiology Liaison",
       "http://purl.obolibrary.org/obo/OOSTT_167/emergency_medicine_liaison": "Emergency Medicine Liaison",
       "bnode:http://cafe-trauma.com/bnode/y4098": "Critical Care Trauma Surgeons more text more more more",
-      "bnode:http://cafe-trauma.com/bnode/v4123": "Central Kansas",
-      "bnode:http://cafe-trauma.com/bnode/v4122": "Northeast Kansas",
+      "bnode:http://cafe-trauma.com/bnode/v4123": "Central Arkansas",
+      "bnode:http://cafe-trauma.com/bnode/v4122": "Northeast Arkansas",
       "http://purl.obolibrary.org/obo/GEO_000000151": "Geographic Region",
       "bnode:http://cafe-trauma.com/bnode/emr4072": "Emergency Medicine Liaison Role",
       "bnode:http://cafe-trauma.com/bnode/z4089": "Certified Trauma Surgeon Role",
@@ -430,7 +495,7 @@ function triplesToGraph(triples){
       "bnode:http://cafe-trauma.com/bnode/y4073" : "Trauma System Development",
       "bnode:http://cafe-trauma.com/bnode/z4073" : "Trauma System Plan",
       "http://purl.obolibrary.org/obo/OOSTT_167/trauma_program": "Your Trauma Program",
-      "bnode:http://cafe-trauma.com/bnode/x4073": "State of Kansas",
+      "bnode:http://cafe-trauma.com/bnode/x4073": "State of Arkansas",
 
 
       "bnode:http://cafe-trauma.com/bnode/orth6298": "Orthopedic Liaison",
@@ -441,8 +506,8 @@ function triplesToGraph(triples){
       "bnode:http://cafe-trauma.com/bnode/an6298": "Anesthesiology Liaison",
       "http://purl.obolibrary.org/obo/OOSTT_167/emergency_medicine_liaison": "Emergency Medicine Liaison",
       "bnode:http://cafe-trauma.com/bnode/y6327": "Critical Care Trauma Surgeons more text more more more",
-      "bnode:http://cafe-trauma.com/bnode/v6291": "Central Kansas",
-      "bnode:http://cafe-trauma.com/bnode/v6292": "Northeast Kansas",
+      "bnode:http://cafe-trauma.com/bnode/v6291": "Central Arkansas",
+      "bnode:http://cafe-trauma.com/bnode/v6292": "Northeast Arkansas",
       "bnode:http://cafe-trauma.com/bnode/y6324": "General Surgeons current in ATLS",
       "bnode:http://cafe-trauma.com/bnode/y6321": "Emergency Surgeons current in ATLS",
       "bnode:http://cafe-trauma.com/bnode/y6320": "Emergency Physicians",
@@ -473,28 +538,28 @@ function triplesToGraph(triples){
 
 
     //replacement text for demo
-    //if (anotherDictionary.hasOwnProperty(subjLabel)) {
-    //  //console.log('match')
-    //  subjLabel = anotherDictionary[subjLabel]
-    //}
+    if (anotherDictionary.hasOwnProperty(subjLabel)) {
+      //console.log('match')
+      subjLabel = anotherDictionary[subjLabel]
+    }
 
-    //if (anotherDictionary.hasOwnProperty(predLabel)) {
-    //  //console.log('match')
-    //  predLabel = anotherDictionary[predLabel]
-    //}
+    if (anotherDictionary.hasOwnProperty(predLabel)) {
+      //console.log('match')
+      predLabel = anotherDictionary[predLabel]
+    }
 
-    //if (objLabel.startsWith("x") && objLabel.length === 22) {
-    //  //console.log('match')
-    //  objLabel = 'bnode'
-    //}
+    if (objLabel.startsWith("x") && objLabel.length === 22) {
+      //console.log('match')
+      objLabel = 'bnode'
+    }
 
-    //if (anotherDictionary.hasOwnProperty(objLabel)) {
-    //  objLabel = anotherDictionary[objLabel]
-    //}
+    if (anotherDictionary.hasOwnProperty(objLabel)) {
+      objLabel = anotherDictionary[objLabel]
+    }
 
-    //if (subjLabel.startsWith('bnode') || objLabel.startsWith('bnode')) {
-    //  return;
-    //}
+    if (subjLabel.startsWith('bnode') || objLabel.startsWith('bnode')) {
+      //return;
+    }
 
 
 		var subjNode = filterNodesById(graph.nodes, subjId)[0];
@@ -507,7 +572,7 @@ function triplesToGraph(triples){
        //console.log('insert subj ' + subjLabel)
        //console.log('obj would be ' + objLabel)
       }
-			subjNode = {id:subjId, label:subjLabel, weight:1, level:null, enabled:true};
+			subjNode = {id:subjId, label:subjLabel, weight:1, level:null, enabled:true, pinned:false};
       //console.log(subjId)
 			graph.nodes.push(subjNode);
 		}
@@ -516,7 +581,7 @@ function triplesToGraph(triples){
       if (predLabel == 'has part') {
        //console.log('insert obj ' + objLabel)
       }
-			objNode = {id:objId, label:objLabel, weight:1, level:null, enabled:true};
+			objNode = {id:objId, label:objLabel, weight:1, level:null, enabled:true, pinned:false};
 			graph.nodes.push(objNode);
 		}
 
@@ -548,8 +613,8 @@ function triplesToGraph(triples){
 
   //focus = graph.nodes.find(node => node.id === "http://purl.obolibrary.org/obo/OOSTT_154/trauma_program");
   focus = graph.nodes.find(node => node.id === targetNode);
-  console.log(targetNode)
-  console.log(focus)
+  //console.log(targetNode)
+  //console.log(focus)
   //console.log('updating')
   updateDistances()
 
@@ -708,6 +773,8 @@ nodes = svg.append("g")
   .on('dblclick', doubleClickEvent)
   .on('click', clicked);
 
+
+
 // Append a rectangle around each text element
 nodes.append("rect")
   .attr("length", function(d) {
@@ -785,8 +852,8 @@ nodes.each(function() {
 });
 
 	// ==================== Add Links ====================
-  console.log('nodes')
-  console.log(nodes)
+  //console.log('nodes')
+  //console.log(nodes)
 	links = svg.selectAll(".link")
 						.data(graph.links)
 						.enter()
@@ -808,8 +875,8 @@ function clicked(d){
   //console.log('stack ' + stack)
  //console.log("clicked");
   
-  console.log("CLICKED");
-  console.log(d);
+  //console.log("CLICKED");
+  //console.log(d);
 
 
   textElement = svg.selectAll("text")
@@ -842,7 +909,28 @@ function clicked(d){
       stack.pop()
       activeId = stack[stack.length-1]
     }
+    //console.log('same active id')
     for (var node of graph.nodes) {
+      node['enabled'] = false
+
+      if (node['id'] == activeId || node['id'] == targetNode) {
+        node['enabled'] = true
+      }
+
+      if (stack.includes(node['id'])) {
+        node['enabled'] = true
+      }
+
+      //console.log(pinnedStacks)
+      for (const [key, pinStack] of Object.entries(pinnedStacks)) {
+        console.log(`${key}: ${pinStack}`);
+        if (pinStack.includes(node['id'])) {
+          node['enabled'] = true
+          console.log('enabling pinned entry')
+        }
+      }
+
+
       stackNode = graph.nodes.find(node => node.id === activeId)
       distance = shortestDistance(stackNode, node)
       //if (node['id'].includes('y4100')) {
@@ -857,12 +945,6 @@ function clicked(d){
         // //console.log('enabled')
         // //console.log(node['id'])
         //}
-      } else if (node['level'] > d['level']) {
-        //if (node['id'].includes('y4100')) {
-        // //console.log('disabled')
-        // //console.log(node['id'])
-        //}
-        node['enabled'] = false
       }
     }
     nodes.style('opacity', function(o){
@@ -883,6 +965,7 @@ function clicked(d){
         return d.id == peek(stack);
 
       });
+      updateDisplay()
       parentNode = graph.nodes.find(node => node.id === peek(stack))
       //console.log(stack)
       //console.log('peek ' + peek(stack))
@@ -938,10 +1021,22 @@ function clicked(d){
   activeId = d.id
   clickedNode = graph.nodes.find(node => node.id === activeId)
   findNode =graph.nodes.find(node => node.id === stack[stack.length-1])
+  
 
-  console.log("THE STACK");
-  console.log(stack);
+  //console.log(pinnedStacks)
+  for (const [key, pinStack] of Object.entries(pinnedStacks)) {
+    console.log(`${key}: ${pinStack}`);
+    if (pinStack.includes(activeId)) {
+      console.log('path should be pinned')
+      stack = [...pinStack];
+    }
+  }
 
+
+  //console.log("THE STACK");
+  //console.log(stack);
+
+  //only works for 'main' path.  need to add logic for pinned stack replacement
   while (stack.length >= 1 && graph.nodes.find(node => node.id === stack[stack.length-1]).level >= clickedNode.level) {
     stack.pop()
   }
@@ -973,22 +1068,29 @@ function clicked(d){
   infoContainer.innerHTML += "<p>Label (not rdf:label): " + d.label + "</p>";
 
   for (var node of graph.nodes) {
+    node['enabled'] = false
+    if (node['id'] == activeId || node['id'] == targetNode) {
+      node['enabled'] = true
+    }
+
+    if (stack.includes(node['id'])) {
+      node['enabled'] = true
+    }
+
+    //console.log(pinnedStacks)
+    for (const [key, pinStack] of Object.entries(pinnedStacks)) {
+      console.log(`${key}: ${pinStack}`);
+      if (pinStack.includes(node['id'])) {
+        node['enabled'] = true
+        console.log('enabling pinned entry')
+      }
+    }
+
     if (node !== d) {
       distance = shortestDistance(d, node)
       if (node['level'] > d['level'] && distance ==1) {
-        if (node['id'].includes('y4100')) {
-         //console.log('enabled')
-         //console.log(node['id'])
-        }
         node['enabled'] = true
-      } else if (node['level'] >= d['level']) {
-        if (node['id'].includes('y4100')) {
-          //console.log('disabled')
-          //console.log(node['id'])
-        }
-        node['enabled'] = false
-      }
-    } else {
+      } 
     }
   }
 
@@ -999,8 +1101,10 @@ function clicked(d){
     return d.id == findId;
 
   });
-  console.log("FIND CLICK");
-  console.log(findElement);
+
+  updateDisplay()
+  //console.log("FIND CLICK");
+  //console.log(findElement);
   //console.log('add labels this')
   //console.log('d ' + d)
   //console.log('this ' + d3.select(this))
@@ -1039,8 +1143,8 @@ function clicked(d){
   });
 
   simulation.alpha(1).restart();
-  ticked();
   updateDisplay()
+  ticked();
 
   //zoom
   //svg.transition()
@@ -1181,8 +1285,11 @@ function updateDisplay() {
   //categoryNodes.selectAll('text').style('fill', 'black').attr('transform', 'translate(5, 0)');
   
   nodes.selectAll('rect').style('fill', 'white').style('height', 20).style('stroke', function(o) {
-    if (o.label.includes("Kansas")) {
+    var nodeType = findType(o);
+    if (nodeType == 'person' || nodeType == 'people') {
       return 'blue'
+    } else if (nodeType == 'geographic') {
+      return 'green'
     } else {
       return 'red'
     }
@@ -1204,6 +1311,15 @@ function updateDisplay() {
         } else {
           text = d.label;
         }
+        var nodeType = findType(d);
+        if (nodeType == 'person') {
+          text = '👤 ' + text;
+        } else if (nodeType == 'people') {
+          text = '👥 ' + text;
+        } else if (nodeType == 'geographic') {
+          text = '🌐 ' + text;
+        }
+        
         var maxWidth = 185; // Maximum width of the box
         if (d.id == peek(stack)) {maxWidth = 1000;}
         const textWidth = getTextWidth(text, "12px Arial"); // Function to get text width
@@ -1239,7 +1355,7 @@ function updateDisplay() {
   activeNode.selectAll('text').each(function(d) {
     // `this` refers to the current `<rect>` element in the iteration
     rectHeight = this.getBBox().height;
-    console.log("Height of node", d.id, ":", rectHeight);
+    //console.log("Height of node", d.id, ":", rectHeight);
 });
 
 
@@ -1318,6 +1434,8 @@ function ticked() {
   arrowLinks = svg.selectAll(".arrowlink")
     .data(currentArrows);
   arrowLinks.exit().remove();
+  svg.selectAll(".pin-hitarea").remove();
+  svg.selectAll(".pin").remove();
 
 
   for (let label of labels) {
@@ -1329,7 +1447,7 @@ function ticked() {
   }
   
   if (activeId != null) {
-    console.log(activeId)
+    //console.log(activeId)
     activeNode = graph.nodes.find(node => node.id === activeId)
     activeNode.x = width * .2 * activeNode.level + (width * .025)
     activeNode.fx = width * .2 * activeNode.level + (width * .025)
@@ -1337,29 +1455,138 @@ function ticked() {
     activeNode.fy = height * .5; // Set the desired y-coordinate
   }
 
-	nodes
-		//.attr("x", function(d){ return d.x; })
-		//.attr("y", function(d){ return d.y; })
-    .attr("transform", function(d) {
-        return "translate(" + d.x + "," + d.y + ")";
-    }).filter(function(d) {
-        return stack.includes(d.id);
-    }).attr("transform", function(d) {
-        return "translate(" + d.x + ", " + height/2 + ")"
-    });
+  //pinned 'stacks' will be a dict of lists
+  //key is 'pinned' id
+  //values are a list of nodes
+  //
+  //for each level put the enabled nodes (in order they appear in the dict)
+  //a dict doesn't have order.  find a way (alpha by keys?)
+  //bottom of offset is activeId or current stack node
 
-  //xVal = (stack.length - 1) * width * .2 + (width * .025)
-  //console.log(xVal)
 	//nodes
 	//	//.attr("x", function(d){ return d.x; })
 	//	//.attr("y", function(d){ return d.y; })
   //  .attr("transform", function(d) {
-  //      return "translate(" + xVal + "," + height/2 + ")";
-  //  })
+  //      return "translate(" + d.x + "," + d.y + ")";
+  //  }).filter(function(d) {
+  //      return stack.includes(d.id);
+  //  }).attr("transform", function(d) {
+  //      return "translate(" + d.x + ", " + height/2 + ")"
+  //  });
+  //
+  const levelCounts = {};
+
+  for (const node of graph.nodes) {
+    if (node.enabled == true) {
+      const level = node.level;
+      if (level in levelCounts) {
+        levelCounts[level]++;
+      } else {
+        levelCounts[level] = 1;
+      }
+    }
+  }
+
+
+  const offsetCounts = {};
+
+  nodes.selectAll(".pin").remove();
+  maxOffset = 0;
+  nodes.each(function(d) {
+    const level = d.level;
+    if (d.enabled == true) {
+      if (level in offsetCounts) {
+        offsetCounts[level] ++;
+      } else {
+        offsetCounts[level] = 1;
+      }
+    }
+
+      const pinPath = "M13.5538 2.66232C14.4174 1.85314 15.75 1.85663 16.6089 2.64211L16.7341 2.7658L21.4991 7.85135C21.6191 7.97942 21.7237 8.12108 21.8108 8.27345C22.4005 9.30545 22.0832 10.6078 21.1103 11.2587L20.9736 11.3433L16.0771 14.1413C15.9593 14.2086 15.8626 14.3062 15.7964 14.4232L15.7526 14.5144L13.9505 19.028C13.7641 19.4949 13.1888 19.6418 12.8033 19.3497L12.7237 19.2804L9.48597 16.0442L4.53489 21.0033L3.46997 21L3.47201 19.9449L8.42497 14.9832L5.22008 11.7804C4.86452 11.425 4.95639 10.8384 5.37685 10.5992L5.47194 10.5535L9.96721 8.7569C10.0987 8.70436 10.2119 8.61598 10.2946 8.50278L10.3506 8.4134L13.1069 3.24538C13.2229 3.02786 13.3739 2.83088 13.5538 2.66232ZM20.4045 8.87696L15.6395 3.7914C15.3563 3.48914 14.8817 3.4737 14.5794 3.75691C14.5394 3.79437 14.5037 3.83604 14.4729 3.88114L14.4304 3.95127L11.6742 9.11929C11.4521 9.53569 11.1055 9.87036 10.685 10.078L10.5239 10.1498L7.08541 11.524L12.9793 17.4151L14.3596 13.9582C14.5246 13.5449 14.8079 13.1911 15.172 12.9401L15.3329 12.8389L20.2293 10.0409C20.589 9.83544 20.7139 9.3773 20.5084 9.01766L20.4606 8.94427L20.4045 8.87696Z" 
+      const unpinPath = "M3.28034 2.21968C2.98745 1.92678 2.51257 1.92677 2.21968 2.21966C1.92678 2.51255 1.92677 2.98743 2.21966 3.28032L8.34462 9.4054L5.47194 10.5535L5.37685 10.5992C4.95639 10.8384 4.86452 11.425 5.22008 11.7804L8.42497 14.9832L3.47201 19.9449L3.46997 21L4.53489 21.0033L9.48597 16.0442L12.7237 19.2804L12.8033 19.3497C13.1888 19.6418 13.7641 19.4949 13.9505 19.0281L15.0966 16.1575L20.7194 21.7805C21.0123 22.0734 21.4872 22.0734 21.7801 21.7805C22.073 21.4876 22.073 21.0127 21.7801 20.7198L3.28034 2.21968ZM13.9423 15.0032L12.9793 17.4151L7.08541 11.524L9.49871 10.5595L13.9423 15.0032Z M20.2293 10.041L15.7706 12.5888L16.87 13.6882L20.9736 11.3433L21.1103 11.2587C22.0832 10.6078 22.4005 9.30546 21.8108 8.27346C21.7237 8.12109 21.6191 7.97942 21.4991 7.85136L16.7341 2.76581L16.6089 2.64212C15.75 1.85664 14.4174 1.85315 13.5538 2.66233C13.3739 2.83089 13.2229 3.02787 13.1069 3.24539L10.7836 7.60169L11.8922 8.7104L14.4304 3.95127L14.4729 3.88115C14.5037 3.83605 14.5394 3.79438 14.5794 3.75692C14.8817 3.47371 15.3563 3.48915 15.6395 3.79141L20.4045 8.87697L20.4606 8.94428L20.5084 9.01767C20.7139 9.3773 20.589 9.83544 20.2293 10.041Z"
+
+    if (activeId == d.id || ((activeId != d.id) && d.pinned)) {
+      const nodeWidth = d3.select(this).select("rect").node().getBBox().width;
+
+
+// remove existing circles with that class
+d3.select(this).selectAll(".pin-hitarea").remove();
+
+// then add a fresh one
+d3.select(this)
+  .append("circle")
+  .attr("class", "pin-hitarea")
+  .attr("cx", nodeWidth - 14)
+  .attr("cy", -4)
+  .attr("r", 7)
+  .style("fill", "transparent")
+  .style("pointer-events", "all")
+  .on("click", function(d) {
+    d3.event.stopPropagation();
+    pinClicked(d);
+    ticked();
+  }).on("mouseover", function () {
+    d3.select(this.parentNode).select(".pin")
+      .attr("stroke", "black");
+  })
+  .on("mouseout", function () {
+    d3.select(this.parentNode).select(".pin")
+      .attr("stroke", "none");
+  });
+
+      d3.select(this)
+        .append("path")
+        .attr("d", d.pinned ? unpinPath : pinPath)
+       .attr("fill", "black")
+        .attr("transform", "translate(" + (nodeWidth - 20) + ", -10) scale(0.6)") // scaling down to fit
+        .attr("class", "pin")
+        .on("click", function(d) {
+          d3.event.stopPropagation();
+          pinClicked(d);
+          ticked();
+        }).on("mouseover", function () {
+          d3.select(this)
+      .attr("stroke", "black");
+  }).on("mouseout", function () {
+    d3.select(this)
+      .attr("stroke", "none");
+  });
+
+    }
+    if (targetNode == d.id || activeId == d.id) {
+      d3.select(this)
+        .attr("transform", "translate(" + d.x + ", " + Math.max((height / 2), offsetCounts[level] * 25)  + ")");
+
+    } else if (stack.includes(d.id)) {
+      // 'this' refers to the DOM element
+      //d3.select(this)
+       // .attr("transform", "translate(" + d.x + ", " + (offsetCounts[level] * 25) + ")");
+      d3.select(this)
+        .attr("transform", "translate(" + d.x + ", " + Math.max((offsetCounts[level] * 25), (height / 2)) + ")");
+
+      //console.log('STACK VALUE')
+    } else if (nodeInDict(d.id, pinnedStacks)) {
+      order = getNodeStackOrder(d.id, pinnedStacks)
+      maxOffset = Math.max(order, maxOffset);
+      d3.select(this)
+        .attr("transform", "translate(" + d.x + ", " + (order * 30) + ")");
+
+    } else {
+      //console.log('STACK VALUE2')
+      d3.select(this)
+        .attr("transform", "translate(" + d.x + ", " + d.y + ")");
+    }
+  });
 
 
 
-  offset = 50
+
+
+  maxOffset = maxOffset + 1;
+  offset = Math.max(50, maxOffset * 30);
+  console.log('offset ' + offset);
+  console.log('max offset ' + maxOffset);
+  //offset = 50;
   labels = []
   boxes = []
   if (stack.length > 0) {
@@ -1369,9 +1596,9 @@ function ticked() {
       rectElement = svg.select(".nodes").selectAll('rect').filter(function (d) {
         return d.id == activeId;
       });
-      console.log('rect')
+      //console.log('rect')
       rectWidth = rectElement.attr('width')
-      console.log(rectWidth)
+      //console.log(rectWidth)
       widthOffset = rectWidth - 190
       if (widthOffset < 0) {widthOffset = 0;}
       xVal = xVal + widthOffset
@@ -1423,121 +1650,192 @@ function ticked() {
       rectElement = svg.select(".nodes").selectAll('rect').filter(function (d) {
         return d.id == activeId;
       });
-      console.log('rect')
+      //console.log('rect')
       rectWidth = rectElement.attr('width')
-      console.log(rectWidth)
+      rectHeight =  rectElement.attr('height')
+      //console.log(rectWidth)
       //currentArrows.push({targetX: stack.length * width * .2 + (width * .025) - 5, targetY: boxTop + ((boxBottom - boxTop) / 2), source: graph.nodes.find(node => node.id === activeId)})
-      currentArrows.push({targetX: xVal - 5, targetY: boxTop + ((boxBottom - boxTop) / 2), source: activeNode.x, width: rectWidth})
+      currentArrows.push({targetX: xVal - 5, targetY: boxTop + ((boxBottom - boxTop) / 2), sourceX: parseFloat(activeNode.x) + parseFloat(rectWidth), sourceY: parseFloat(activeNode.y) })
+      console.log(activeNode.x + rectWidth)
+      console.log(rectWidth)
       offset += 25
     }
   }
 
-  for (let x = stack.length - 1; x > 0; x --) {
-    currentArrows.push({targetX: x * width * .2 + (width * .025), targetY: height / 2, source: (x-1) * width * .2 + (width * .025),  width: 190})
+  for (let i = stack.length - 1; i > 0; i --) {
+
+      const fromId = stack[i - 1].replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id;
+      const toId = stack[i].replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id;
+      const fromElem = d3.select(`#${fromId}`).node();
+      const toElem = d3.select(`#${toId}`).node();
+      console.log(fromElem)
+
+
+
+      if (fromElem && toElem) {
+        const fromBox = fromElem.getBBox();
+        const fromCtm = fromElem.getCTM();
+        const toBox = toElem.getBBox();
+        const toCtm = toElem.getCTM();
+        console.log(fromBox.x)
+        console.log(fromBox.y)
+
+
+        // Calculate the center of each node
+        const fromX = (fromBox.x + fromBox.width) * fromCtm.a + (fromBox.y + fromBox.height / 2) * fromCtm.c + fromCtm.e;
+        const fromY = fromBox.x * fromCtm.b + (fromBox.y + fromBox.height / 2) * fromCtm.d + fromCtm.f;
+        const toX = toBox.x * toCtm.a + (toBox.y + toBox.height / 2) * toCtm.c + toCtm.e;
+        const toY = toBox.x * toCtm.b + (toBox.y + toBox.height / 2) * toCtm.d + toCtm.f;
+        currentArrows.push({targetX: toX,  targetY: toY,  sourceX: fromX, sourceY: fromY})
+      }
   }
 
+  for (const key in pinnedStacks) {
+    const curStack = pinnedStacks[key];
+    for (let i = 0; i < curStack.length - 1; i++) {
+
+      const fromId = curStack[i].replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id;
+      const toId = curStack[i + 1].replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id;
+
+      // Select the SVG elements by ID
+      const fromElem = d3.select(`#${CSS.escape(fromId)}`).node();
+      const toElem = d3.select(`#${CSS.escape(toId)}`).node();
+      console.log(fromElem)
 
 
-  console.log('example')
-  console.log(currentArrows)
-	arrowLinks = svg.selectAll(".arrowlink")
-						.data(currentArrows)
-						.enter()
-      .append("path")
-    .attr("class", "arrowlink")
-    .attr("fill", "none")
-    .attr("stroke", "#555")
-    .attr("stroke-opacity", 0.4)
-    .attr("stroke-width", 1.5)
-    .attr("marker-end", "url(#end)")
 
-  console.log('links')
-  console.log(arrowLinks)
-	arrowLinks
-    .attr("d", d => {
-      //console.log('start Arrow')
-      //const sourceX = d.source.fx + calculateNodeWidth(d.source) + 20
-      const sourceX = parseFloat(d.source) + parseFloat(d.width); 
-      const sourceY = height / 2;
-      //console.log(d.source.id)
-      console.log('source x ' + sourceX)
-      console.log('source y ' + sourceY)
-      
-      //console.log('target x ' + d.targetX)
-      //console.log('target y ' + d.targetY)
-      //console.log(d.target)
-      const targetX = d.targetX;
-      //const targetY = d.target.y;
-      const targetY = d.targetY;
-
-      // Calculate control points for the curve
-      const controlX1 = sourceX + (targetX - sourceX) * 0.5;
-      const controlY1 = sourceY;
-      const controlX2 = targetX - (targetX - sourceX) * 0.5;
-      const controlY2 = targetY;
-
-      // Construct the path using cubic Bézier curve commands
-      return `M${sourceX},${sourceY} C${controlX1},${controlY1} ${controlX2},${controlY2} ${targetX},${targetY}`;
-
-    });
-  //console.log('arrow links')
-  //console.log(arrowLinks)
+      if (fromElem && toElem && fromId !== activeId.replace(/[^a-zA-Z0-9_-]/g, "_")) {
+        const fromBox = fromElem.getBBox();
+        const fromCtm = fromElem.getCTM();
+        const toBox = toElem.getBBox();
+        const toCtm = toElem.getCTM();
+        console.log(fromBox.x)
+        console.log(fromBox.y)
 
 
-	//links
-  //        .attr("d", d3.linkHorizontal()
-  //          .x(d => d.source.y)
-  //          .y(d => d.source.x));
-  //     ;
+        // Calculate the center of each node
+        const fromX = (fromBox.x + fromBox.width) * fromCtm.a + (fromBox.y + fromBox.height / 2) * fromCtm.c + fromCtm.e;
+        const fromY = fromBox.x * fromCtm.b + (fromBox.y + fromBox.height / 2) * fromCtm.d + fromCtm.f;
+        const toX = toBox.x * toCtm.a + (toBox.y + toBox.height / 2) * toCtm.c + toCtm.e;
+        const toY = toBox.x * toCtm.b + (toBox.y + toBox.height / 2) * toCtm.d + toCtm.f;
+        //console.log(fromX)
+        //console.log(toX)
+        //console.log(toY)
+        currentArrows.push({targetX: toX,  targetY: toY,  sourceX: fromX, sourceY: fromY})
+      }
+      // drawLine(fromNode, toNode); // your actual drawing function here
+    }
+  }
 
-//	nodeTexts
-//		.attr("x", function(d) { return d.x + 2 ; })
-//		.attr("y", function(d) { return d.y + 12; })
-//		;
+      setTimeout(() => {
+        console.log('test');
+      }, 0);
+
+      setTimeout(() => {
+        console.log('test');
+        //console.log('example')
+        //console.log(currentArrows)
+	      arrowLinks = svg.selectAll(".arrowlink")
+	      					.data(currentArrows)
+	      					.enter()
+            .append("path")
+          .attr("class", "arrowlink")
+          .attr("fill", "none")
+          .attr("stroke", "#555")
+          .attr("stroke-opacity", 0.4)
+          .attr("stroke-width", 1.5)
+          .attr("marker-end", "url(#end)")
+
+        //console.log('links')
+        //console.log(arrowLinks)
+	      arrowLinks
+          .attr("d", d => {
+            //console.log('start Arrow')
+            //const sourceX = d.source.fx + calculateNodeWidth(d.source) + 20
+            const sourceX = parseFloat(d.sourceX);
+            const sourceY = parseFloat(d.sourceY);
+            //console.log(d.source.id)
+            //console.log('source x ' + sourceX)
+            //console.log('source y ' + sourceY)
+            
+            //console.log('target x ' + d.targetX)
+            //console.log('target y ' + d.targetY)
+            //console.log(d.target)
+            const targetX = d.targetX;
+            //const targetY = d.target.y;
+            const targetY = d.targetY;
+
+            // Calculate control points for the curve
+            const controlX1 = sourceX + (targetX - sourceX) * 0.5;
+            const controlY1 = sourceY;
+            const controlX2 = targetX - (targetX - sourceX) * 0.5;
+            const controlY2 = targetY;
+
+            // Construct the path using cubic Bézier curve commands
+            return `M${sourceX},${sourceY} C${controlX1},${controlY1} ${controlX2},${controlY2} ${targetX},${targetY}`;
+
+          });
+        //console.log('arrow links')
+        //console.log(arrowLinks)
 
 
-  linkTexts.attr("transform", function(d) {
-    // Calculate the angle between the source and target nodes
-    var sourcex = calculateNodeWidth(d.source) + d.source.x 
-    var dx = d.target.x - sourcex;
-    var dy = d.target.y - d.source.y;
-    var angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  
-    // Calculate the midpoint of the line
-    var midX = (sourcex + d.target.x) / 2;
-    var midY = (d.source.y + d.target.y - 8) / 2;
-  
-    // Get the text element
-    var textElement = d3.select(this);
-  
-    // Get the computed text length
-    var textLength = textElement.node().getComputedTextLength();
-  
-    // Calculate the offset for text positioning
-    var offsetX = (textLength / 2) * Math.cos(angle * Math.PI / 180);
-    var offsetY = (textLength / 2) * Math.sin(angle * Math.PI / 180);
+	      //links
+        //        .attr("d", d3.linkHorizontal()
+        //          .x(d => d.source.y)
+        //          .y(d => d.source.x));
+        //     ;
 
-    // Calculate the perpendicular distance for text positioning
-    var perpendicularDistance = 2; // Adjust this value as needed
-    offsetX += -perpendicularDistance * Math.sin(angle * Math.PI / 180);
-    offsetY += perpendicularDistance * Math.cos(angle * Math.PI / 180);
-  
-    // Translate the text to the adjusted position
-    var x = midX - offsetX;
-    var y = midY - offsetY;
-  
-    return "translate(" + x + "," + y + ") rotate(" + angle + ")";
-  });
+//      	nodeTexts
+//      		.attr("x", function(d) { return d.x + 2 ; })
+//      		.attr("y", function(d) { return d.y + 12; })
+//      		;
 
-  //updateDisplay()
-  
-  var bbox = svg.node().getBBox();
 
-  // Update the SVG width and height based on the content size
-  svg.attr('width', bbox.width)
-     .attr('height', bbox.height);
+        linkTexts.attr("transform", function(d) {
+          // Calculate the angle between the source and target nodes
+          var sourcex = calculateNodeWidth(d.source) + d.source.x 
+          var dx = d.target.x - sourcex;
+          var dy = d.target.y - d.source.y;
+          var angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        
+          // Calculate the midpoint of the line
+          var midX = (sourcex + d.target.x) / 2;
+          var midY = (d.source.y + d.target.y - 8) / 2;
+        
+          // Get the text element
+          var textElement = d3.select(this);
+        
+          // Get the computed text length
+          var textLength = textElement.node().getComputedTextLength();
+        
+          // Calculate the offset for text positioning
+          var offsetX = (textLength / 2) * Math.cos(angle * Math.PI / 180);
+          var offsetY = (textLength / 2) * Math.sin(angle * Math.PI / 180);
 
-  scrollContainer.style("height", bbox.height + "px");
+          // Calculate the perpendicular distance for text positioning
+          var perpendicularDistance = 2; // Adjust this value as needed
+          offsetX += -perpendicularDistance * Math.sin(angle * Math.PI / 180);
+          offsetY += perpendicularDistance * Math.cos(angle * Math.PI / 180);
+        
+          // Translate the text to the adjusted position
+          var x = midX - offsetX;
+          var y = midY - offsetY;
+        
+          return "translate(" + x + "," + y + ") rotate(" + angle + ")";
+        });
+
+        //updateDisplay()
+        
+        var bbox = svg.node().getBBox();
+
+        // Update the SVG width and height based on the content size
+        svg.attr('width', bbox.width)
+           .attr('height', bbox.height);
+
+        scrollContainer.style("height", bbox.height + "px");
+
+      }, 25);
+
 
 
 
@@ -1571,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function selectThisNode(node) {
   const escapedId = node.id.replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize the id
   const selectedNode = d3.select(`#${escapedId}`);
-  console.log("Selected Node:", selectedNode);
+  //console.log("Selected Node:", selectedNode);
   searchClick(selectedNode.datum());
 }
 
@@ -1640,6 +1938,21 @@ function showDidYouMeanPopup(matches) {
 }
 
 
+function pinClicked(d) {
+
+  console.log(d)
+  d.pinned = !d.pinned
+  console.log(d.pinned)
+  if (d.pinned) {
+    console.log('stack added')
+    pinnedStacks[d.id] = [...stack]
+  } else {
+    delete pinnedStacks[d.id]
+  }
+
+  
+
+}
 
 function searchClick(d) {
   console.log("SEARCH");
@@ -1667,11 +1980,12 @@ function searchClick(d) {
   clickedNode = graph.nodes.find(node => node.id === activeId)
 
   simulation.alpha(1).restart();
-  ticked();
   updateDisplay()
+  ticked();
 
   stack = [];
   tempStack = [];
+  console.log(d.pinned)
   curLevel = clickedNode.level;
   curNode = clickedNode;
   console.log("cur nodes");
@@ -1755,8 +2069,8 @@ function searchClick(d) {
   });
 
   simulation.alpha(1).restart();
-  ticked();
   updateDisplay()
+  ticked();
 
 
   //parentNode = graph.nodes.find(node => node.id === peek(stack))
@@ -1765,6 +2079,7 @@ function searchClick(d) {
     return d.id == findId;
 
   });
+  updateDisplay()
   console.log("FIND");
   console.log(findElement);
   //console.log('add labels this')
@@ -1805,8 +2120,8 @@ function searchClick(d) {
   });
 
   simulation.alpha(1).restart();
-  ticked();
   updateDisplay()
+  ticked();
 
 
 }
